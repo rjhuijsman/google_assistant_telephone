@@ -1,0 +1,50 @@
+# In a builder container we'll build the Python packages we need; we do that
+# separately so that we don't need to have the (large) dev tools installed
+# on the Pi.
+#
+# We use a distro based on Debian Buster with Python 3.7 pre-installed.
+# FROM balenalib/raspberry-pi-python:3.7-buster-20210420 as builder
+FROM balenalib/raspberry-pi-python:3.7-buster-20210420
+
+# Let's make ourselves a working directory.
+WORKDIR /usr/src/rotary-phone
+
+# Install the packages needed to build our required packages.
+RUN install_packages libffi-dev portaudio19-dev libssl-dev build-essential rustc cargo
+RUN pip install --upgrade pip
+RUN pip install wheel
+
+# Build the required Python packages and store them on disk.
+COPY src/requirements.txt .
+RUN python -m pip wheel --wheel-dir=/tmp/wheelhouse -r requirements.txt
+
+# # Now let's build the actual container, using the packages we've built above.
+# # We need a package with Python 3.7 or 3.8, not 3.9: the Google Assistant samples
+# # that our application uses are not compatible with 3.9 due to
+# # https://github.com/googlesamples/assistant-sdk-python/issues/418
+# FROM balenalib/raspberry-pi-python:3.7-buster-20210420
+
+# # Let's make ourselves a working directory.
+# WORKDIR /usr/src/rotary-phone
+
+# Hotplugging USB devices: yes please.
+ENV UDEV=1
+
+# Install the packages we need present on the Pi Zero.
+# TODO: maybe libportaudio2 is sufficient?
+RUN install_packages libatomic1 portaudio19-dev alsa-utils
+
+# Copy over the built Python packages and install them.
+# COPY --from=builder /tmp/wheelhouse /tmp/wheelhouse
+COPY src/requirements.txt .
+RUN pip install --no-index --find-links=/tmp/wheelhouse -r requirements.txt
+RUN rm -rf /tmp/wheelhouse 
+
+# Set up the right sound system configuration.
+COPY ./alsa.conf /usr/share/alsa/alsa.conf
+
+# Put the app into place.
+COPY ./src .
+
+# Start the application by running the startup script.
+CMD ./startup.sh

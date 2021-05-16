@@ -1,9 +1,7 @@
-
 import RPi.GPIO as GPIO
 import time
 import logging
 from google_assistant import GoogleAssistant
-
 
 assistant = GoogleAssistant()
 logging.basicConfig(level=logging.INFO)
