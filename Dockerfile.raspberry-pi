@@ -1,4 +1,4 @@
-# In a builder container we'll build the Python packages we need; we do that
+# TODO: in a builder container build the Python packages we need; we do that
 # separately so that we don't need to have the (large) dev tools installed
 # on the Pi.
 #
@@ -40,14 +40,14 @@ COPY src/requirements.txt .
 RUN pip install --no-index --find-links=/tmp/wheelhouse -r requirements.txt
 RUN rm -rf /tmp/wheelhouse 
 
+# Give names to our USB sound cards.
+COPY ./85-sound-card-order.rules /lib/udev/rules.d/
+
 # Set up the right sound system configuration.
 COPY ./alsa.conf /usr/share/alsa/alsa.conf
 
-# TODO: move this up into requirements.
-RUN pip install gpiozero
-
 # TODO: these can be removed after development.
-RUN install_packages openssh-client vim
+#RUN install_packages openssh-client vim
 
 # Put the app into place.
 COPY ./src .

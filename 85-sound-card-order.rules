@@ -1,0 +1,7 @@
+SUBSYSTEM!="sound", GOTO="sound_card_order_end"
+ACTION!="add", GOTO="sound_card_order_end"
+
+ATTRS{idVendor}=="0c76", ATTR{id}="Horn"
+ATTRS{idVendor}=="1908", ATTR{id}="External"
+
+LABEL="sound_card_order_end"

@@ -31,8 +31,9 @@ cp device_config.json /root/.config/googlesamples-assistant/device_config.json
 
 ### Set some basic settings.
 echo "Setting volumes"
-amixer sset Speaker 75%
-amixer sset Mic 75%
+amixer -c "Horn" sset Speaker 75%
+amixer -c "Horn" sset Mic 75%
+amixer -c "External" set PCM 20%
 
 ### We're ready!
 python ./app.py

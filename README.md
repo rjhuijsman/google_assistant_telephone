@@ -11,9 +11,9 @@ This repo makes the following changes:
 
 Next steps:
 
-- Test that everything works as expected
-- <checkpoint>
 - External speaker
+- <checkpoint>
+- Dedicated Google account for device
 - <checkpoint>
 - See about extracting the Docker container into a separately-published thing.
 - See about slimming down the Docker container.
