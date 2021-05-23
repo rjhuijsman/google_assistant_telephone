@@ -11,15 +11,15 @@ This repo makes the following changes:
 
 Next steps:
 
-- Wire up the hook so the Pi can detect it.
-- Test reading the hook from Python.
-- Authenticate the Google stuff, verify that Assistant works.
-- Replace the deprecated Google stuff with the not-ready-yet Google stuff.
+- Test that everything works as expected
+- <checkpoint>
+- External speaker
 - <checkpoint>
 - See about extracting the Docker container into a separately-published thing.
 - See about slimming down the Docker container.
 - <checkpoint>
-- Wire up the rotary dial and write code that can read the rotary dial.
+- Publish via Deploy On Balena button?
+- <checkpoint>
 - Twilio stuff?
 -
 -
@@ -53,11 +53,7 @@ Follow these steps, partially following Google's Assistant SDK tutorial:
 ### Get your personal credentials.
 
 1. Run:
-   google_assistant_telephone$ google-oauthlib-tool \
-    --client-secrets ./oauth_config_credentials.json \
-    --scope https://www.googleapis.com/auth/assistant-sdk-prototype \
-    --scope https://www.googleapis.com/auth/gcm \
-    --save --headless
+   google_assistant_telephone$ make authenticate
 1. Make note of the name of the file that the tool placed those credentials in.
 1. Look at the contents of your credentials file; save them somewhere for later use in Balena. E.g.:
    $ cat ~/path/to/your/google-oauthlib-tool/credentials.json && echo "MAKE NOTE OF THE ABOVE, that line is your CREDENTIALS"

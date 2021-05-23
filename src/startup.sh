@@ -10,7 +10,8 @@ if [ "$CREDENTIALS" == "" ]; then
   exit 1
 fi
 mkdir -p /root/.config/google-oauthlib-tool
-echo $CREDENTIALS > /root/.config/google-oauthlib-tool/credentials.json
+echo $CREDENTIALS > credentials.json
+cp credentials.json /root/.config/google-oauthlib-tool/credentials.json
 
 # Device configuration: generated from multiple environment variables based on a template.
 if [ "$MODEL_ID" == "" ]; then
@@ -24,7 +25,8 @@ if [ "$DEVICE_ID" == "" ]; then
   exit 1
 fi
 mkdir -p /root/.config/googlesamples-assistant
-cat ./device_config.json.template | sed "s/DEVICE_ID_GOES_HERE/$DEVICE_ID/" | sed "s/MODEL_ID_GOES_HERE/$MODEL_ID/" > /root/.config/googlesamples-assistant/device_config.json
+cat ./device_config.json.template | sed "s/DEVICE_ID_GOES_HERE/$DEVICE_ID/" | sed "s/MODEL_ID_GOES_HERE/$MODEL_ID/" > device_config.json
+cp device_config.json /root/.config/googlesamples-assistant/device_config.json
 
 
 ### Set some basic settings.
@@ -33,5 +35,8 @@ amixer sset Speaker 75%
 amixer sset Mic 75%
 
 ### We're ready!
-echo "Service is up"
+python ./app.py
+
+### We expect the program above to run forever; if it didn't, freeze the app for debugging.
+echo "Service crashed!?"
 sleep infinity

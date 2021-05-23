@@ -17,20 +17,18 @@ import assistant_helpers
 import audio_helpers
 import device_helpers
 from tenacity import retry, stop_after_attempt, retry_if_exception
-from google.assistant.embedded.v1alpha2 import (
-    embedded_assistant_pb2,
-    embedded_assistant_pb2_grpc
-)
+from google.assistant.embedded.v1alpha2 import (embedded_assistant_pb2,
+                                                embedded_assistant_pb2_grpc)
 
 
 class GoogleAssistant(object):
     """Google Assistant Object"""
-
     def __init__(self):
-        root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        root_dir = os.path.dirname(os.path.realpath(__file__))
         self.language_code = 'en-US'
         self.device_config_path = os.path.join(root_dir, 'device_config.json')
-        self.device_credentials_path = os.path.join(root_dir, 'credentials.json')
+        self.device_credentials_path = os.path.join(root_dir,
+                                                    'credentials.json')
         self._set_credentials()
         self._load_device_config()
         self._create_conversation_stream()
@@ -40,10 +38,10 @@ class GoogleAssistant(object):
         self.conversation_state = None
         self.is_new_conversation = True
         self.assistant = embedded_assistant_pb2_grpc.EmbeddedAssistantStub(
-            self.channel
-        )
+            self.channel)
         self.deadline = 60 * 3 + 5
-        self.device_handler = device_helpers.DeviceRequestHandler(self.device_id)
+        self.device_handler = device_helpers.DeviceRequestHandler(
+            self.device_id)
 
     def _get_audio_source(self):
         """Returns the system audio souruce"""
@@ -51,8 +49,7 @@ class GoogleAssistant(object):
             sample_rate=audio_helpers.DEFAULT_AUDIO_SAMPLE_RATE,
             sample_width=audio_helpers.DEFAULT_AUDIO_SAMPLE_WIDTH,
             block_size=audio_helpers.DEFAULT_AUDIO_DEVICE_BLOCK_SIZE,
-            flush_size=audio_helpers.DEFAULT_AUDIO_DEVICE_FLUSH_SIZE
-        )
+            flush_size=audio_helpers.DEFAULT_AUDIO_DEVICE_FLUSH_SIZE)
 
     def _get_audio_sink(self):
         """Returns the system audio sink"""
@@ -82,10 +79,8 @@ class GoogleAssistant(object):
         self.project_id = os.environ['PROJECT_ID']
         self.device_model_id = os.environ['DEVICE_MODEL_ID']
         endpoint = 'embeddedassistant.googleapis.com'
-        device_base_url = (
-            'https://%s/v1alpha2/projects/%s/devices' % (endpoint,
-                                                            self.project_id)
-        )
+        device_base_url = ('https://%s/v1alpha2/projects/%s/devices' %
+                           (endpoint, self.project_id))
         self.device_id = str(uuid.uuid1())
         payload = {
             'id': self.device_id,
@@ -93,8 +88,7 @@ class GoogleAssistant(object):
             'client_type': 'SDK_SERVICE'
         }
         session = google.auth.transport.requests.AuthorizedSession(
-            self.credentials
-        )
+            self.credentials)
         r = session.post(device_base_url, data=json.dumps(payload))
         if r.status_code != 200:
             logging.error('Failed to register device: %s', r.text)
@@ -106,8 +100,7 @@ class GoogleAssistant(object):
         """Create a gRPC channel"""
         endpoint = 'embeddedassistant.googleapis.com'
         self.channel = google.auth.transport.grpc.secure_authorized_channel(
-            self.credentials, self.http_request, endpoint
-        )
+            self.credentials, self.http_request, endpoint)
 
     def _set_http_request(self):
         """Sets the Request object"""
@@ -135,7 +128,8 @@ class GoogleAssistant(object):
             return True
         return False
 
-    @retry(reraise=True, stop=stop_after_attempt(3),
+    @retry(reraise=True,
+           stop=stop_after_attempt(3),
            retry=retry_if_exception(is_grpc_error_unavailable))
     def assist(self):
         """Send a voice request to the Assistant and playback the response.
@@ -155,6 +149,7 @@ class GoogleAssistant(object):
 
         # This generator yields AssistResponse proto messages
         # received from the gRPC Google Assistant API.
+        answer_data = []
         for resp in self.assistant.Assist(iter_log_assist_requests(),
                                           self.deadline):
             assistant_helpers.log_assist_response_without_audio(resp)
@@ -163,15 +158,14 @@ class GoogleAssistant(object):
                 logging.info('Stopping recording.')
                 self.conversation_stream.stop_recording()
             if resp.speech_results:
-                logging.info('Transcript of user request: "%s".',
-                             ' '.join(r.transcript
-                                      for r in resp.speech_results))
+                logging.info(
+                    'Transcript of user request: "%s".',
+                    ' '.join(r.transcript for r in resp.speech_results))
             if len(resp.audio_out.audio_data) > 0:
                 if not self.conversation_stream.playing:
                     self.conversation_stream.stop_recording()
-                    self.conversation_stream.start_playback()
-                    logging.info('Playing assistant response.')
-                self.conversation_stream.write(resp.audio_out.audio_data)
+                    logging.debug('Getting assistant response...')
+                answer_data.append(resp.audio_out.audio_data)
             if resp.dialog_state_out.conversation_state:
                 conversation_state = resp.dialog_state_out.conversation_state
                 logging.debug('Updating conversation state.')
@@ -187,8 +181,7 @@ class GoogleAssistant(object):
                 continue_conversation = False
             if resp.device_action.device_request_json:
                 device_request = json.loads(
-                    resp.device_action.device_request_json
-                )
+                    resp.device_action.device_request_json)
                 fs = self.device_handler(device_request)
                 if fs:
                     device_actions_futures.extend(fs)
@@ -197,6 +190,14 @@ class GoogleAssistant(object):
             logging.info('Waiting for device executions to complete.')
             concurrent.futures.wait(device_actions_futures)
 
+        
+        logging.info('Playing assistant response.')
+        # Make all of the audio one big buffer, so the response doesn't stutter.
+        response_audio = bytearray()
+        for audio_data in answer_data:
+            response_audio.extend(audio_data)
+        self.conversation_stream.start_playback()
+        self.conversation_stream.write(response_audio)
         logging.info('Finished playing assistant response.')
         self.conversation_stream.stop_playback()
         return continue_conversation
@@ -222,8 +223,7 @@ class GoogleAssistant(object):
             device_config=embedded_assistant_pb2.DeviceConfig(
                 device_id=self.device_id,
                 device_model_id=self.device_model_id,
-            )
-        )
+            ))
         if self.display:
             config.screen_out_config.screen_mode = embedded_assistant_pb2.ScreenOutConfig.PLAYING
         self.is_new_conversation = False
