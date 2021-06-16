@@ -28,6 +28,9 @@ mkdir -p /root/.config/googlesamples-assistant
 cat ./device_config.json.template | sed "s/DEVICE_ID_GOES_HERE/$DEVICE_ID/" | sed "s/MODEL_ID_GOES_HERE/$MODEL_ID/" > device_config.json
 cp device_config.json /root/.config/googlesamples-assistant/device_config.json
 
+### For some reason this is necessary to trigger the udev rules!?!?
+udevadm -d test /devices/platform/soc/20980000.usb/usb1/1-1/1-1.3/1-1.3:1.0/sound/card1
+udevadm -d test /devices/platform/soc/20980000.usb/usb1/1-1/1-1.4/1-1.4:1.0/sound/card2
 
 ### Set some basic settings.
 echo "Setting volumes"
